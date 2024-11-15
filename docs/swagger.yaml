@@ -1,0 +1,52 @@
+basePath: /
+definitions:
+  gin.H:
+    additionalProperties: {}
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: This microservice has the responsability of creating and validating
+    QR Codes for a Queue
+  license:
+    name: MIT
+    url: http://opensource.org/licenses/MIT
+  title: QR Code Microservice
+  version: "1.0"
+paths:
+  /qrcode:
+    get:
+      description: Returns QR Code for a Giver
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: QR Code for Queue
+          schema:
+            $ref: '#/definitions/gin.H'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gin.H'
+      summary: Returns QR Code for a Giver
+      tags:
+      - qrcode
+  /ticket:
+    get:
+      description: Returns ticket number for the queue
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Ticket number for queue
+          schema:
+            $ref: '#/definitions/gin.H'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/gin.H'
+      summary: Returns ticket number for the queue
+      tags:
+      - qrcode
+      - ticket
+swagger: "2.0"

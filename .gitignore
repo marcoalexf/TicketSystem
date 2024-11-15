@@ -27,3 +27,4 @@ go.work.sum
 go.sum
 
 tmp/
+QR Code Microservice/*
