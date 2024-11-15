@@ -1,7 +1,5 @@
 package main
 
-//TESTE KADAFAS IN THE HOUSE
-
 import (
 	"net/http"
 
