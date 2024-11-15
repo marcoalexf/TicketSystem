@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/skip2/go-qrcode"
 )
 
 // getQrCode handles a GET request to generate and return a QR Code for a "Giver"
@@ -17,9 +18,15 @@ import (
 func getQrCode(ctx *gin.Context) {
 	ipAddress := ctx.ClientIP()
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"ipAddress": ipAddress,
-	})
+	// Generate the QR code as a PNG image in memory
+	qrCode, err := qrcode.Encode(ipAddress, qrcode.Medium, 256) // 256x256 pixels
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate QR code"})
+		return
+	}
+
+	// Send the QR code image as a response
+	ctx.Data(http.StatusOK, "image/png", qrCode)
 }
 
 // getQrCode handles a GET request retrieve a ticket for a given Queue
