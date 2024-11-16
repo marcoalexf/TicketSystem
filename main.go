@@ -1,22 +1,48 @@
 package main
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/marcoalexf/QRCodeService/dbconnection"
 	"github.com/skip2/go-qrcode"
 )
 
-// getQrCode handles a GET request to generate and return a QR Code for a "Giver"
-// @Summary      Returns QR Code for a Giver
+type Distributer struct {
+	Email string `json:"email"`
+}
+
+// registerQueue handles a POST request to generate and return a QR Code for a "Giver" and stores the email and ipAddress in database
+// @Summary      Saves in the database the ipAddress and email and Returns QR Code for a Giver
 // @Description  Returns QR Code for a Giver
 // @Tags         qrcode
 // @Produce      json
 // @Success      200   {object}  gin.H  "QR Code for Queue"
-// @Failure      400   {object}  gin.H  "Bad Request"
-// @Router       /qrcode [get]
-func getQrCode(ctx *gin.Context) {
+// @Failure		 400   {object}  gin.H  "Email is required or in a bad format"
+// @Router       /qrcode [post]
+func registerQueue(ctx *gin.Context, connection *pgxpool.Pool) {
 	ipAddress := ctx.ClientIP()
+
+	var distributer Distributer
+
+	// Bind the JSON to the user struct
+	if err := ctx.ShouldBindJSON(&distributer); err != nil {
+		// Respond with an error if binding fails
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// TODO: Store in database
+	// query := `
+	// 	INSERT INTO queues (email, ipAddress, queueId, updated_at)
+	// 	VALUES ($1, $2, $3, $4)
+	// 	ON CONFLICT (email, ipAddress)
+	// 	DO UPDATE SET updated_at = EXCLUDED.updated_at;
+	// `
+
+	// _, err := pool.Exec(context.Background(), query, username, email, time.Now())
 
 	// Generate the QR code as a PNG image in memory
 	qrCode, err := qrcode.Encode(ipAddress, qrcode.Medium, 256) // 256x256 pixels
@@ -37,7 +63,7 @@ func getQrCode(ctx *gin.Context) {
 // @Success      200   {object}  gin.H  "Ticket number for queue"
 // @Failure      400   {object}  gin.H  "Bad Request"
 // @Router       /ticket [get]
-func getTicket(ctx *gin.Context) {
+func getTicket(ctx *gin.Context, connection *pgxpool.Pool) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"ticket": 1,
 	})
@@ -53,11 +79,23 @@ func getTicket(ctx *gin.Context) {
 // @host      localhost:8080
 // @BasePath  /
 func main() {
+	db := dbconnection.NewDatabase()
+
+	connection, err := db.Open()
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v\n", err)
+	}
+
+	defer db.Close()
 	router := gin.Default()
 
-	router.GET("/qrcode", getQrCode)
+	router.POST("/register", func(ctx *gin.Context) {
+		registerQueue(ctx, connection)
+	})
 
-	router.GET("/ticket", getTicket)
+	router.GET("/ticket", func(ctx *gin.Context) {
+		getTicket(ctx, connection)
+	})
 
 	// Start the server
 	router.Run(":8080") // Listen on port 8080
