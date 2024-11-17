@@ -35,14 +35,12 @@ func registerQueue(ctx *gin.Context, connection *pgxpool.Pool) {
 	}
 
 	// TODO: Store in database
-	// query := `
-	// 	INSERT INTO queues (email, ipAddress, queueId, updated_at)
-	// 	VALUES ($1, $2, $3, $4)
-	// 	ON CONFLICT (email, ipAddress)
-	// 	DO UPDATE SET updated_at = EXCLUDED.updated_at;
-	// `
+	query := `
+		INSERT INTO public.service (email, ip_address)
+		VALUES ($1, $2);
+	`
 
-	// _, err := pool.Exec(context.Background(), query, username, email, time.Now())
+	_, err := connection.Exec(ctx, query, distributer.Email, ipAddress)
 
 	// Generate the QR code as a PNG image in memory
 	qrCode, err := qrcode.Encode(ipAddress, qrcode.Medium, 256) // 256x256 pixels
@@ -76,7 +74,7 @@ func getTicket(ctx *gin.Context, connection *pgxpool.Pool) {
 // @license.name  MIT
 // @license.url   http://opensource.org/licenses/MIT
 
-// @host      localhost:8080
+// @host      localhost:4444
 // @BasePath  /
 func main() {
 	db := dbconnection.NewDatabase()
@@ -98,5 +96,5 @@ func main() {
 	})
 
 	// Start the server
-	router.Run(":8080") // Listen on port 8080
+	router.Run(":4444") // Listen on port 4444
 }
