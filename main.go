@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"net/http"
 
@@ -12,6 +13,15 @@ import (
 
 type Distributer struct {
 	Email string `json:"email"`
+}
+
+func generateQrCode(data string) ([]byte, error) {
+	// Generate the QR code as a PNG image in memory
+	qrCode, err := qrcode.Encode(data, qrcode.Medium, 256) // 256x256 pixels
+	if err != nil {
+		return nil, errors.New("Cannot generate QRCode for the provided data")
+	}
+	return qrCode, nil
 }
 
 // registerQueue handles a POST request to generate and return a QR Code for a "Giver" and stores the email and ipAddress in database
@@ -41,11 +51,14 @@ func registerQueue(ctx *gin.Context, connection *pgxpool.Pool) {
 	`
 
 	_, err := connection.Exec(ctx, query, distributer.Email, ipAddress)
-
-	// Generate the QR code as a PNG image in memory
-	qrCode, err := qrcode.Encode(ipAddress, qrcode.Medium, 256) // 256x256 pixels
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate QR code"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Could not executre query to register new queue"})
+		return
+	}
+
+	qrCode, err := generateQrCode(distributer.Email + ipAddress)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": "Could not generate QR Code"})
 		return
 	}
 
@@ -53,27 +66,23 @@ func registerQueue(ctx *gin.Context, connection *pgxpool.Pool) {
 	ctx.Data(http.StatusOK, "image/png", qrCode)
 }
 
-// getQrCode handles a GET request retrieve a ticket for a given Queue
-// @Summary      Returns ticket number for the queue
-// @Description  Returns ticket number for the queue
+// getQrCode handles a GET request retrieve a qr code that represents a queue
+// @Summary      Returns queue
+// @Description  Returns queue
 // @Tags         qrcode, ticket
 // @Produce      json
 // @Success      200   {object}  gin.H  "Ticket number for queue"
 // @Failure      400   {object}  gin.H  "Bad Request"
 // @Router       /ticket [get]
-func getTicket(ctx *gin.Context, connection *pgxpool.Pool) {
-	ctx.JSON(http.StatusOK, gin.H{
-		"ticket": 1,
-	})
+func getQueueQrCode(ctx *gin.Context, connection *pgxpool.Pool) {
+	// TODO: Implement the query to fetch and genereate qr code
 }
 
 // @title           QR Code Microservice
 // @version         1.0
 // @description     This microservice has the responsability of creating and validating QR Codes for a Queue
-
 // @license.name  MIT
 // @license.url   http://opensource.org/licenses/MIT
-
 // @host      localhost:4444
 // @BasePath  /
 func main() {
